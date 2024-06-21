@@ -40,6 +40,13 @@ struct State {
 	Token token { Token::unknown };
 
 	std::string value { };
+	std::map<std::string, std::string> module_mapping;
+
+	void next();
+	void add_ch_to_value();
+	void set_token(const Token& tok);
+	void set_bi_char_token(char trigger, const Token& with_trigger, const Token& others);
+	void do_comment();
 
 	void advance();
 
@@ -88,10 +95,25 @@ inline bool is_letter(int c) {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-void State::advance() {
-	while (is_whitespace(ch)) {
-		ch = in.get();
+void State::add_ch_to_value() {
+	value += static_cast<char>(ch);
+	ch = in.get();
+}
+
+void State::next() { if (ch != EOF) { ch = in.get(); } }
+void State::set_token(const Token& tok) { token = tok; next(); }
+
+void State::set_bi_char_token(char trigger, const Token& with_trigger, const Token& others) {
+	next();
+	if (ch == trigger) {
+		set_token(with_trigger);
+	} else {
+		token = others;
 	}
+}
+
+void State::advance() {
+	while (ch != EOF && is_whitespace(ch)) { next(); }
 
 	constexpr int dot_dot { 1000 };
 
@@ -99,9 +121,7 @@ void State::advance() {
 
 	if (is_letter(ch)) {
 		value.clear();
-		while (is_letter(ch) || is_digit(ch)) {
-			value += static_cast<char>(ch); ch = in.get();
-		}
+		while (is_letter(ch) || is_digit(ch)) { add_ch_to_value(); }
 		auto got { keywords.find(value) };
 		token = got == keywords.end() ? Token::identifier : got->second;
 		return;
@@ -112,18 +132,17 @@ void State::advance() {
 		bool is_hex { false };
 		for (;;) {
 			if (is_digit(ch)) {
-				value += static_cast<char>(ch); ch = in.get();
+				add_ch_to_value();
 			} else if (ch >= 'A' && ch <= 'F') {
-				value += static_cast<char>(ch); ch = in.get();
+				add_ch_to_value();
 				is_hex = true;
 			} else { break; }
 		}
 		if (ch == 'H') {
 			is_hex = true;
-			ch = in.get();
+			next();
 		} else if (ch == 'X') {
-			ch = in.get();
-			token = Token::char_literal;
+			set_token(Token::char_literal);
 			return;
 		} else if (is_hex) {
 			token = Token::unknown;
@@ -137,96 +156,66 @@ void State::advance() {
 				return;
 			}
 			value += '.';
-			if (is_hex) {
-				token = Token::unknown;
-				return;
-			}
-			while (is_digit(ch)) {
-				value += static_cast<char>(ch); ch = in.get();
-			}
-			if (*end == 'E') {
-				++end;
-				if (*end == '+' || *end == '-') { ++end; }
-				if (!char_info::is_digit(*end)) {
-					form_token(end, token::unknown);
+			if (is_hex) { set_token(Token::unknown); return; }
+			while (is_digit(ch)) { add_ch_to_value(); }
+			if (ch == 'E') {
+				add_ch_to_value();
+				if (ch == '+' || ch == '-') { add_ch_to_value(); }
+				if (!is_digit(ch)) {
+					token = Token::unknown;
 					return;
 				}
-				while (char_info::is_digit(*end)) { ++end; }
+				while (is_digit(ch)) { add_ch_to_value(); }
 			}
-			form_token(end, token::float_literal);
+			token = Token::float_literal;
 			return;
 		}
-		form_token(end, token::integer_literal);
+		token = Token::integer_literal;
 		return;
 	}
 
-	switch (*ptr_) {
-		#define TOK(ch, kind) case ch: form_token(ptr_ + 1, kind); break;
-		TOK('+', token::plus)
-		TOK('-', token::minus)
-		TOK('*', token::star)
-		TOK('/', token::slash)
-		TOK(')', token::right_parenthesis)
-		TOK(',', token::comma)
-		TOK(';', token::semicolon)
-		TOK('=', token::equals)
-		TOK('#', token::not_equals)
-		TOK('|', token::bar)
-		TOK('[', token::left_bracket)
-		TOK(']', token::right_bracket)
-		TOK('^', token::ptr)
-		TOK('&', token::andop)
-		TOK('~', token::notop)
-		TOK('{', token::left_brace)
-		TOK('}', token::right_brace)
-		#undef TOK
-		case '.':
-			if (ptr_[1] == '.') {
-				form_token(ptr_ + 2, token::range);
+	switch (ch) {
+		case '+': set_token(Token::plus); break;
+		case '-': set_token(Token::minus); break;
+		case '*': set_token(Token::star); break;
+		case '/': set_token(Token::slash); break;
+		case ')': set_token(Token::right_parenthesis); break;
+		case ',': set_token(Token::comma); break;
+		case ';': set_token(Token::semicolon); break;
+		case '=': set_token(Token::equals); break;
+		case '#': set_token(Token::not_equals); break;
+		case '|': set_token(Token::bar); break;
+		case '[': set_token(Token::left_bracket); break;
+		case ']': set_token(Token::right_bracket); break;
+		case '^': set_token(Token::ptr); break;
+		case '&': set_token(Token::andop); break;
+		case '~': set_token(Token::notop); break;
+		case '{': set_token(Token::left_brace); break;
+		case '}': set_token(Token::right_brace); break;
+		case '.': set_bi_char_token('.', Token::range, Token::period); break;
+		case dot_dot: set_token(Token::range); break;
+		case ':': set_bi_char_token('=', Token::assign, Token::colon); break;
+		case '<': set_bi_char_token('=', Token::less_or_equal, Token::less); break;
+		case '>': set_bi_char_token('=', Token::greater_or_equal, Token::greater); break;
+		case '"':
+			next();
+			value.clear();
+			while (ch != EOF && ch != '"') { add_ch_to_value(); }
+			if (ch != '"') {
+				token = Token::unknown;
 			} else {
-				form_token(ptr_ + 1, token::period);
+				set_token(Token::string_literal);
 			}
 			break;
-		case ':':
-			if (ptr_[1] == '=') {
-				form_token(ptr_ + 2, token::assign);
-			} else {
-				form_token(ptr_ + 1, token::colon);
-			}
-			break;
-		case '<':
-			if (ptr_[1] == '=') {
-				form_token(ptr_ + 2, token::less_or_equal);
-			} else {
-				form_token(ptr_ + 1, token::less);
-			}
-			break;
-		case '>':
-			if (ptr_[1] == '=') {
-				form_token(ptr_ + 2, token::greater_or_equal);
-			} else {
-				form_token(ptr_ + 1, token::greater);
-			}
-			break;
-		case '"': {
-			const char* end = ptr_ + 1;
-			while (*end && *end != '"') { ++end; }
-			if (!*end) {
-				form_token(end, token::unknown);
-			} else {
-				form_token(end + 1, token::string_literal);
-			}
-			break;
-		}
 		case '(':
-			if (ptr_[1] == '*') {
+			next();
+			if (ch == '*') {
 				do_comment();
 			} else {
-				form_token(ptr_ + 1, token::left_parenthesis);
+				token = Token::left_parenthesis;
 			}
 			break;
-		default:
-			form_token(ptr_ + 1, token::unknown);
+		default: set_token(Token::unknown);
 	}
 }
 
@@ -261,7 +250,7 @@ void convert(const std::string& path) {
 	parse_module(state);
 }
 
-void parse_import_list();
+void parse_import_list(State& state);
 void parse_declaration_sequence();
 void parse_statement_sequence();
 
@@ -275,7 +264,7 @@ void parse_module(State& state) {
 	state.advance();
 	state.consume(Token::semicolon);
 	if (state.token == Token::IMPORT) {
-		parse_import_list();
+		parse_import_list(state);
 	}
 	parse_declaration_sequence();
 	if (state.token == Token::BEGIN) {
@@ -292,8 +281,36 @@ void parse_module(State& state) {
 	state.expect(Token::eof);
 }
 
-void parse_import_list() {
-	throw Error { "parse_import_list not implemented" };
+void State::do_comment() {
+	throw Error { "comments not implemented" };
+}
+
+void parse_import(State& state);
+
+void parse_import_list(State& state) {
+	state.consume(Token::IMPORT);
+	parse_import(state);
+	while (state.token == Token::comma) {
+		state.advance();
+		parse_import(state);
+	}
+	state.consume(Token::semicolon);
+	state.h << "\n";
+}
+
+void parse_import(State& state) {
+	state.expect(Token::identifier);
+	auto name { state.value };
+	auto full_name { name };
+	state.advance();
+	if (state.token == Token::assign) {
+		state.advance();
+		state.expect(Token::identifier);
+		full_name = state.value;
+		state.advance();
+	}
+	state.module_mapping[name] = full_name;
+	state.h << "#include \"" << full_name << ".h\"\n";
 }
 
 void parse_declaration_sequence() {
