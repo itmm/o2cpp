@@ -628,6 +628,7 @@ std::string parse_qual_ident(State& state) {
 			state.advance();
 		} else { throw Error { ". after module expected" }; }
 	}
+	if (name == "INTEGER") { name = "SYSTEM_INTEGER"; }
 	return name;
 }
 
