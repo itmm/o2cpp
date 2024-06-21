@@ -51,7 +51,7 @@ struct State {
 		std::ofstream& h, std::ofstream& cxx
 	):
 		base { std::move(base) }, in { in }, h { h }, cxx { cxx }
-	{ advance(); }
+	{ module_mapping["SYSTEM"] = "SYSTEM"; advance(); }
 
 	void expect(const Token& token) const;
 	void consume(const Token& token);
@@ -404,7 +404,7 @@ void parse_import(State& state) {
 
 void parse_const_declaration(State& state);
 void parse_type_declaration();
-void parse_variable_declaration();
+void parse_variable_declaration(State& state);
 void parse_procedure_declaration();
 
 void parse_declaration_sequence(State& state) {
@@ -425,7 +425,7 @@ void parse_declaration_sequence(State& state) {
 	if (state.token == Token_kwVAR) {
 		state.advance();
 		while (state.token == Token_identifier) {
-			parse_variable_declaration();
+			parse_variable_declaration(state);
 			state.consume(Token_semicolon);
 		}
 	}
@@ -436,25 +436,26 @@ void parse_declaration_sequence(State& state) {
 	}
 }
 
-void parse_ident_def(State& state);
+std::string parse_ident_def(State& state);
 void parse_const_expression(State& state);
 
 void parse_const_declaration(State& state) {
 	state.h << "constexpr auto ";
-	parse_ident_def(state);
+	state.h << parse_ident_def(state);
 	state.consume(Token_equals);
 	state.h << " { ";
 	parse_const_expression(state);
 	state.h << " };\n";
 }
 
-void parse_ident_def(State& state) {
+std::string parse_ident_def(State& state) {
 	state.expect(Token_identifier);
-	state.h << state.base << "_" << state.value;
+	auto result { state.base + "_" + state.value };
 	state.advance();
 	if (state.token == Token_star) {
 		state.advance();
 	}
+	return result;
 }
 
 std::string parse_expression(State& state);
@@ -467,8 +468,63 @@ void parse_type_declaration() {
 	throw Error { "parse_type_declaration not implemented" };
 }
 
-void parse_variable_declaration() {
-	throw Error { "parse_variable_declaration not implemented" };
+std::string parse_ident_list(State& state);
+std::string parse_type(State& state);
+
+void parse_variable_declaration(State& state) {
+	auto idents { parse_ident_list(state) };
+	state.consume(Token_colon);
+	auto type { parse_type(state) };
+	state.h << "extern " << type << " " << idents << ";\n";
+	state.cxx << type << " " << idents << ";\n";
+}
+
+std::string parse_ident_list(State& state) {
+	auto idents { parse_ident_def(state) };
+	while (state.token == Token_comma) {
+		state.advance();
+		idents += ", ";
+		idents += parse_ident_def(state);
+	}
+	return idents;
+}
+
+std::string parse_qual_ident(State& state);
+std::string parse_array_type(State& state);
+std::string parse_record_type(State& state);
+std::string parse_pointer_type(State& state);
+std::string parse_procedure_type(State& state);
+
+std::string parse_type(State& state) {
+	if (state.token == Token_identifier) {
+		return parse_qual_ident(state);
+	} else if (state.token == Token_kwARRAY) {
+		return parse_array_type(state);
+	} else if (state.token == Token_kwRECORD) {
+		return parse_record_type(state);
+	} else if (state.token == Token_kwPOINTER) {
+		return parse_pointer_type(state);
+	} else if (state.token == Token_kwPROCEDURE) {
+		return parse_procedure_type(state);
+	} else {
+		throw Error { "type expected" };
+	}
+}
+
+std::string parse_array_type(State& state) {
+	throw Error { "parse_array_type not implemented" };
+}
+
+std::string parse_record_type(State& state) {
+	throw Error { "parse_record_type not implemented" };
+}
+
+std::string parse_pointer_type(State& state) {
+	throw Error { "parse_pointer_type not implemented" };
+}
+
+std::string parse_procedure_type(State& state) {
+	throw Error { "parse_procedure_type not implemented" };
 }
 
 void parse_procedure_declaration() {
@@ -525,7 +581,6 @@ void parse_assignment_or_procedure_call(State& state) {
 	}
 }
 
-std::string parse_qual_ident(State& state);
 std::string parse_expression_list(State& state, const char* separator);
 
 std::string parse_designator(State& state) {
