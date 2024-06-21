@@ -265,6 +265,10 @@ void parse_module(State& state) {
 	state.advance();
 	state.consume(Token::semicolon);
 	state.cxx << "static void init_module_imports() {\n";
+	state.cxx << "\tstatic bool already_run { false };\n";
+	state.cxx << "\tif (already_run) { return; }\n";
+	state.cxx << "\talready_run = true;\n;";
+
 	if (state.token == Token::IMPORT) {
 		parse_import_list(state);
 	}
