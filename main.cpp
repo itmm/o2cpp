@@ -344,9 +344,6 @@ void parse_module(State& state) {
 	state.advance();
 	state.consume(Token_semicolon);
 	state.cxx << "static void init_module_imports() {\n";
-	state.indent(); state.cxx << "static bool already_run { false };\n";
-	state.indent(); state.cxx << "if (already_run) { return; }\n";
-	state.indent(); state.cxx << "already_run = true;\n";
 
 	if (Scanner_token == Token_kwIMPORT) {
 		parse_import_list(state);
@@ -356,6 +353,9 @@ void parse_module(State& state) {
 	parse_declaration_sequence(state);
 	state.h << "void " << state.base << "_init_module();\n";
 	state.cxx << "void " << state.base << "_init_module() {\n";
+	state.indent(); state.cxx << "static bool already_run { false };\n";
+	state.indent(); state.cxx << "if (already_run) { return; }\n";
+	state.indent(); state.cxx << "already_run = true;\n";
 	state.indent(); state.cxx << "init_module_imports();\n";
 	if (Scanner_token == Token_kwBEGIN) {
 		state.advance();
