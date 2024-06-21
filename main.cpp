@@ -61,9 +61,80 @@ struct State {
 	void consume(const Token& token);
 };
 
+std::string token_name(const Token& token, const std::string& value) {
+	switch (token) {
+		case Token::unknown: return "unknown";
+		case Token::eof: return "eof";
+		case Token::identifier:	return "identifier " + value;
+		case Token::integer_literal: return "integer " + value;
+		case Token::float_literal: return "float " + value;
+		case Token::string_literal: return "\"" + value + "\"";
+		case Token::char_literal: return "'\\x" + value + "'";
+		case Token::plus: return "+";
+		case Token::minus: return "-";
+		case Token::star: return "*";
+		case Token::slash: return "/";
+		case Token::left_parenthesis: return "(";
+		case Token::right_parenthesis: return ")";
+		case Token::semicolon: return ";";
+		case Token::period: return ".";
+		case Token::comma: return ",";
+		case Token::colon: return ":";
+		case Token::assign: return ":=";
+		case Token::equals: return "=";
+		case Token::bar: return "|";
+		case Token::not_equals: return "#";
+		case Token::left_bracket: return "[";
+		case Token::right_bracket: return "]";
+		case Token::ptr: return "^";
+		case Token::andop: return "&";
+		case Token::notop: return "~";
+		case Token::left_brace: return "{";
+		case Token::right_brace: return "}";
+		case Token::less: return "<";
+		case Token::less_or_equal: return "<=";
+		case Token::greater: return ">";
+		case Token::greater_or_equal: return ">=";
+		case Token::range: return "..";
+		case Token::ARRAY: return "ARRAY";
+		case Token::BEGIN: return "BEGIN";
+		case Token::BY: return "BY";
+		case Token::CASE: return "CASE";
+		case Token::CONST: return "CONST";
+		case Token::DIV: return "DIV";
+		case Token::DO: return "DO";
+		case Token::END: return "END";
+		case Token::ELSE: return "ELSE";
+		case Token::ELSIF: return "ELSIF";
+		case Token::FALSE: return "FALSE";
+		case Token::FOR: return "FOR";
+		case Token::IF: return "IF";
+		case Token::IMPORT: return "IMPORT";
+		case Token::IN: return "IN";
+		case Token::IS: return "IS";
+		case Token::MOD: return "MOD";
+		case Token::MODULE: return "MODULE";
+		case Token::NIL: return "NIL";
+		case Token::OF: return "OF";
+		case Token::OR: return "OR";
+		case Token::POINTER: return "POINTER";
+		case Token::PROCEDURE: return "PROCEDURE";
+		case Token::RECORD: return "RECORD";
+		case Token::REPEAT: return "REPEAT";
+		case Token::RETURN: return "RETURN";
+		case Token::THEN: return "THEN";
+		case Token::TO: return "TO";
+		case Token::TRUE: return "TRUE";
+		case Token::TYPE: return "TYPE";
+		case Token::UNTIL: return "UNTIL";
+		case Token::VAR: return "VAR";
+		case Token::WHILE: return "WHILE";
+	}
+}
+
 void State::expect(const Token& tok) const {
 	if (tok != token) {
-		throw Error { "wrong token" };
+		throw Error { "wrong token " + token_name(token, value) + " (expected " + token_name(tok, "") + ")" };
 	}
 }
 
@@ -267,7 +338,7 @@ void parse_module(State& state) {
 	state.cxx << "static void init_module_imports() {\n";
 	state.cxx << "\tstatic bool already_run { false };\n";
 	state.cxx << "\tif (already_run) { return; }\n";
-	state.cxx << "\talready_run = true;\n;";
+	state.cxx << "\talready_run = true;\n";
 
 	if (state.token == Token::IMPORT) {
 		parse_import_list(state);
@@ -387,7 +458,7 @@ void parse_statement_sequence(State& state) {
 }
 
 void parse_assignment_or_procedure_call(State& state);
-void parse_if_statement();
+void parse_if_statement(State& state);
 void parse_case_statement();
 void parse_while_statement();
 void parse_repeat_statement();
@@ -397,7 +468,7 @@ void parse_statement(State& state) {
 	if (state.token == Token::identifier) {
 		parse_assignment_or_procedure_call(state);
 	} else if (state.token == Token::IF) {
-		parse_if_statement();
+		parse_if_statement(state);
 	} else if (state.token == Token::CASE) {
 		parse_case_statement();
 	} else if (state.token == Token::WHILE) {
@@ -622,8 +693,24 @@ std::string parse_actual_parameters(State& state) {
 	return result;
 }
 
-void parse_if_statement() {
-	throw Error { "parse_if_statement not implemented" };
+void parse_if_statement(State& state) {
+	state.consume(Token::IF);
+	state.cxx << "\tif (" << parse_expression(state) << ") {\n";
+	state.consume(Token::THEN);
+	parse_statement_sequence(state);
+	while (state.token == Token::ELSIF) {
+		state.advance();
+		state.cxx << "\t} else if (" << parse_expression(state) << ") {\n";
+		state.consume(Token::THEN);
+		parse_statement_sequence(state);
+	}
+	if (state.token == Token::ELSE) {
+		state.advance();
+		state.cxx << "\t} else {\n";
+		parse_statement_sequence(state);
+	}
+	state.consume(Token::END);
+	state.cxx << "\t}\n";
 }
 
 void parse_case_statement() {
