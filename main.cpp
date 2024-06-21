@@ -3,11 +3,14 @@
 #include <map>
 #include <utility>
 
+#include "Token.h"
+
 void convert(const std::string& path);
 
 using Error = std::runtime_error;
 
 int main(int argc, const char** argv) {
+	Token_init_module();
 	try {
 		for (int i = 1; i < argc; ++i) {
 			convert(argv[i]);
@@ -20,16 +23,7 @@ int main(int argc, const char** argv) {
 	return EXIT_SUCCESS;
 }
 
-enum class Token {
-	unknown, eof, identifier, integer_literal, float_literal, string_literal,
-	char_literal, plus, minus, star, slash, left_parenthesis, right_parenthesis,
-	semicolon, period, comma, colon, assign, equals, bar, not_equals,
-	left_bracket, right_bracket, ptr, andop, notop, left_brace, right_brace,
-	less, less_or_equal, greater, greater_or_equal, range, ARRAY, BEGIN, BY,
-	CASE, CONST, DIV, DO, END, ELSE, ELSIF, FALSE, FOR, IF, IMPORT, IN, IS, MOD,
-	MODULE, NIL, OF, OR, POINTER, PROCEDURE, RECORD, REPEAT, RETURN, THEN, TO,
-	TRUE, TYPE, UNTIL, VAR, WHILE
-};
+using Token = SYSTEM_INTEGER;
 
 struct State {
 	const std::string base;
@@ -37,7 +31,7 @@ struct State {
 	std::ofstream& h;
 	std::ofstream& cxx;
 	int ch { ' ' };
-	Token token { Token::unknown };
+	Token token { Token_unknown };
 
 	std::string value { };
 	std::map<std::string, std::string> module_mapping;
@@ -69,72 +63,72 @@ void State::indent() {
 
 std::string token_name(const Token& token, const std::string& value) {
 	switch (token) {
-		case Token::unknown: return "unknown";
-		case Token::eof: return "eof";
-		case Token::identifier:	return "identifier " + value;
-		case Token::integer_literal: return "integer " + value;
-		case Token::float_literal: return "float " + value;
-		case Token::string_literal: return "\"" + value + "\"";
-		case Token::char_literal: return "'\\x" + value + "'";
-		case Token::plus: return "+";
-		case Token::minus: return "-";
-		case Token::star: return "*";
-		case Token::slash: return "/";
-		case Token::left_parenthesis: return "(";
-		case Token::right_parenthesis: return ")";
-		case Token::semicolon: return ";";
-		case Token::period: return ".";
-		case Token::comma: return ",";
-		case Token::colon: return ":";
-		case Token::assign: return ":=";
-		case Token::equals: return "=";
-		case Token::bar: return "|";
-		case Token::not_equals: return "#";
-		case Token::left_bracket: return "[";
-		case Token::right_bracket: return "]";
-		case Token::ptr: return "^";
-		case Token::andop: return "&";
-		case Token::notop: return "~";
-		case Token::left_brace: return "{";
-		case Token::right_brace: return "}";
-		case Token::less: return "<";
-		case Token::less_or_equal: return "<=";
-		case Token::greater: return ">";
-		case Token::greater_or_equal: return ">=";
-		case Token::range: return "..";
-		case Token::ARRAY: return "ARRAY";
-		case Token::BEGIN: return "BEGIN";
-		case Token::BY: return "BY";
-		case Token::CASE: return "CASE";
-		case Token::CONST: return "CONST";
-		case Token::DIV: return "DIV";
-		case Token::DO: return "DO";
-		case Token::END: return "END";
-		case Token::ELSE: return "ELSE";
-		case Token::ELSIF: return "ELSIF";
-		case Token::FALSE: return "FALSE";
-		case Token::FOR: return "FOR";
-		case Token::IF: return "IF";
-		case Token::IMPORT: return "IMPORT";
-		case Token::IN: return "IN";
-		case Token::IS: return "IS";
-		case Token::MOD: return "MOD";
-		case Token::MODULE: return "MODULE";
-		case Token::NIL: return "NIL";
-		case Token::OF: return "OF";
-		case Token::OR: return "OR";
-		case Token::POINTER: return "POINTER";
-		case Token::PROCEDURE: return "PROCEDURE";
-		case Token::RECORD: return "RECORD";
-		case Token::REPEAT: return "REPEAT";
-		case Token::RETURN: return "RETURN";
-		case Token::THEN: return "THEN";
-		case Token::TO: return "TO";
-		case Token::TRUE: return "TRUE";
-		case Token::TYPE: return "TYPE";
-		case Token::UNTIL: return "UNTIL";
-		case Token::VAR: return "VAR";
-		case Token::WHILE: return "WHILE";
+		case Token_unknown: return "unknown";
+		case Token_eof: return "eof";
+		case Token_identifier:	return "identifier " + value;
+		case Token_integerLiteral: return "integer " + value;
+		case Token_floatLiteral: return "float " + value;
+		case Token_stringLiteral: return "\"" + value + "\"";
+		case Token_charLiteral: return "'\\x" + value + "'";
+		case Token_plus: return "+";
+		case Token_minus: return "-";
+		case Token_star: return "*";
+		case Token_slash: return "/";
+		case Token_leftParenthesis: return "(";
+		case Token_rightParenthesis: return ")";
+		case Token_semicolon: return ";";
+		case Token_period: return ".";
+		case Token_comma: return ",";
+		case Token_colon: return ":";
+		case Token_assign: return ":=";
+		case Token_equals: return "=";
+		case Token_bar: return "|";
+		case Token_notEquals: return "#";
+		case Token_leftBracket: return "[";
+		case Token_rightBracket: return "]";
+		case Token_ptr: return "^";
+		case Token_andop: return "&";
+		case Token_notop: return "~";
+		case Token_leftBrace: return "{";
+		case Token_rightBrace: return "}";
+		case Token_less: return "<";
+		case Token_lessOrEqual: return "<=";
+		case Token_greater: return ">";
+		case Token_greaterOrEqual: return ">=";
+		case Token_range: return "..";
+		case Token_kwARRAY: return "ARRAY";
+		case Token_kwBEGIN: return "BEGIN";
+		case Token_kwBY: return "BY";
+		case Token_kwCASE: return "CASE";
+		case Token_kwCONST: return "CONST";
+		case Token_kwDIV: return "DIV";
+		case Token_kwDO: return "DO";
+		case Token_kwEND: return "END";
+		case Token_kwELSE: return "ELSE";
+		case Token_kwELSIF: return "ELSIF";
+		case Token_kwFALSE: return "FALSE";
+		case Token_kwFOR: return "FOR";
+		case Token_kwIF: return "IF";
+		case Token_kwIMPORT: return "IMPORT";
+		case Token_kwIN: return "IN";
+		case Token_kwIS: return "IS";
+		case Token_kwMOD: return "MOD";
+		case Token_kwMODULE: return "MODULE";
+		case Token_kwNIL: return "NIL";
+		case Token_kwOF: return "OF";
+		case Token_kwOR: return "OR";
+		case Token_kwPOINTER: return "POINTER";
+		case Token_kwPROCEDURE: return "PROCEDURE";
+		case Token_kwRECORD: return "RECORD";
+		case Token_kwREPEAT: return "REPEAT";
+		case Token_kwRETURN: return "RETURN";
+		case Token_kwTHEN: return "THEN";
+		case Token_kwTO: return "TO";
+		case Token_kwTRUE: return "TRUE";
+		case Token_kwTYPE: return "TYPE";
+		case Token_kwUNTIL: return "UNTIL";
+		case Token_kwVAR: return "VAR";
+		case Token_kwWHILE: return "WHILE";
 	}
 }
 
@@ -145,18 +139,20 @@ void State::expect(const Token& tok) const {
 }
 
 std::map<std::string, Token> keywords {
-	{ "ARRAY", Token::ARRAY }, { "BEGIN", Token::BEGIN }, { "BY", Token::BY },
-	{ "CASE", Token::CASE }, { "CONST", Token::CONST }, { "DIV", Token::DIV },
-	{ "DO", Token::DO }, { "END", Token::END}, { "ELSE", Token::ELSE },
-	{ "ELSIF", Token::ELSIF }, { "FALSE", Token::FALSE }, { "FOR", Token::FOR },
-	{ "IF", Token::IF }, { "IMPORT", Token::IMPORT }, { "IN", Token::IN },
-	{ "IS", Token::IS }, { "MOD", Token::MOD }, { "MODULE", Token::MODULE },
-	{ "NIL", Token::NIL }, { "OF", Token::OF }, { "OR", Token::OR },
-	{ "POINTER", Token::POINTER }, { "PROCEDURE", Token::PROCEDURE },
-	{ "RECORD", Token::RECORD }, { "REPEAT", Token::REPEAT },
-	{ "RETURN", Token::RETURN }, { "THEN", Token::THEN }, { "TO", Token::TO },
-	{ "TRUE", Token::TRUE }, { "TYPE", Token::TYPE }, { "UNTIL", Token::UNTIL },
-	{ "VAR", Token::VAR }, { "WHILE", Token::WHILE }
+	{ "ARRAY", Token_kwARRAY }, { "BEGIN", Token_kwBEGIN },
+	{ "BY", Token_kwBY }, { "CASE", Token_kwCASE }, { "CONST", Token_kwCONST },
+	{ "DIV", Token_kwDIV }, { "DO", Token_kwDO }, { "END", Token_kwEND},
+	{ "ELSE", Token_kwELSE }, { "ELSIF", Token_kwELSIF },
+	{ "FALSE", Token_kwFALSE }, { "FOR", Token_kwFOR }, { "IF", Token_kwIF },
+	{ "IMPORT", Token_kwIMPORT }, { "IN", Token_kwIN }, { "IS", Token_kwIS },
+	{ "MOD", Token_kwMOD }, { "MODULE", Token_kwMODULE },
+	{ "NIL", Token_kwNIL }, { "OF", Token_kwOF }, { "OR", Token_kwOR },
+	{ "POINTER", Token_kwPOINTER }, { "PROCEDURE", Token_kwPROCEDURE },
+	{ "RECORD", Token_kwRECORD }, { "REPEAT", Token_kwREPEAT },
+	{ "RETURN", Token_kwRETURN }, { "THEN", Token_kwTHEN },
+	{ "TO", Token_kwTO }, { "TRUE", Token_kwTRUE }, { "TYPE", Token_kwTYPE },
+	{ "UNTIL", Token_kwUNTIL }, { "VAR", Token_kwVAR },
+	{ "WHILE", Token_kwWHILE }
 };
 
 inline bool is_whitespace(int c) {
@@ -180,7 +176,9 @@ void State::add_ch_to_value() {
 void State::next() { if (ch != EOF) { ch = in.get(); } }
 void State::set_token(const Token& tok) { token = tok; next(); }
 
-void State::set_bi_char_token(char trigger, const Token& with_trigger, const Token& others) {
+void State::set_bi_char_token(
+	char trigger, const Token& with_trigger, const Token& others
+) {
 	next();
 	if (ch == trigger) {
 		set_token(with_trigger);
@@ -194,13 +192,13 @@ void State::advance() {
 
 	constexpr int dot_dot { 1000 };
 
-	if (ch == EOF) { token = Token::eof; return; }
+	if (ch == EOF) { token = Token_eof; return; }
 
 	if (is_letter(ch)) {
 		value.clear();
 		while (is_letter(ch) || is_digit(ch)) { add_ch_to_value(); }
 		auto got { keywords.find(value) };
-		token = got == keywords.end() ? Token::identifier : got->second;
+		token = got == keywords.end() ? Token_identifier : got->second;
 		return;
 	}
 
@@ -220,69 +218,70 @@ void State::advance() {
 			is_hex = true;
 			next();
 		} else if (ch == 'X') {
-			set_token(Token::char_literal);
+			set_token(Token_charLiteral);
 			return;
 		} else if (is_hex) {
-			token = Token::unknown;
+			token = Token_unknown;
 			return;
 		}
 		if (ch == '.') {
 			ch = in.get();
 			if (ch == '.') {
 				ch = dot_dot;
-				token = Token::integer_literal;
+				token = Token_integerLiteral;
 				return;
 			}
 			value += '.';
-			if (is_hex) { set_token(Token::unknown); return; }
+			if (is_hex) { set_token(Token_unknown); return; }
 			while (is_digit(ch)) { add_ch_to_value(); }
 			if (ch == 'E') {
 				add_ch_to_value();
 				if (ch == '+' || ch == '-') { add_ch_to_value(); }
 				if (!is_digit(ch)) {
-					token = Token::unknown;
+					token = Token_unknown;
 					return;
 				}
 				while (is_digit(ch)) { add_ch_to_value(); }
 			}
-			token = Token::float_literal;
+			token = Token_floatLiteral;
 			return;
 		}
-		token = Token::integer_literal;
+		token = Token_integerLiteral;
 		return;
 	}
 
 	switch (ch) {
-		case '+': set_token(Token::plus); break;
-		case '-': set_token(Token::minus); break;
-		case '*': set_token(Token::star); break;
-		case '/': set_token(Token::slash); break;
-		case ')': set_token(Token::right_parenthesis); break;
-		case ',': set_token(Token::comma); break;
-		case ';': set_token(Token::semicolon); break;
-		case '=': set_token(Token::equals); break;
-		case '#': set_token(Token::not_equals); break;
-		case '|': set_token(Token::bar); break;
-		case '[': set_token(Token::left_bracket); break;
-		case ']': set_token(Token::right_bracket); break;
-		case '^': set_token(Token::ptr); break;
-		case '&': set_token(Token::andop); break;
-		case '~': set_token(Token::notop); break;
-		case '{': set_token(Token::left_brace); break;
-		case '}': set_token(Token::right_brace); break;
-		case '.': set_bi_char_token('.', Token::range, Token::period); break;
-		case dot_dot: set_token(Token::range); break;
-		case ':': set_bi_char_token('=', Token::assign, Token::colon); break;
-		case '<': set_bi_char_token('=', Token::less_or_equal, Token::less); break;
-		case '>': set_bi_char_token('=', Token::greater_or_equal, Token::greater); break;
+		case '+': set_token(Token_plus); break;
+		case '-': set_token(Token_minus); break;
+		case '*': set_token(Token_star); break;
+		case '/': set_token(Token_slash); break;
+		case ')': set_token(Token_rightParenthesis); break;
+		case ',': set_token(Token_comma); break;
+		case ';': set_token(Token_semicolon); break;
+		case '=': set_token(Token_equals); break;
+		case '#': set_token(Token_notEquals); break;
+		case '|': set_token(Token_bar); break;
+		case '[': set_token(Token_leftBracket); break;
+		case ']': set_token(Token_rightBracket); break;
+		case '^': set_token(Token_ptr); break;
+		case '&': set_token(Token_andop); break;
+		case '~': set_token(Token_notop); break;
+		case '{': set_token(Token_leftBrace); break;
+		case '}': set_token(Token_rightBrace); break;
+		case '.': set_bi_char_token('.', Token_range, Token_period); break;
+		case dot_dot: set_token(Token_range); break;
+		case ':': set_bi_char_token('=', Token_assign, Token_colon); break;
+		case '<': set_bi_char_token('=', Token_lessOrEqual, Token_less); break;
+		case '>':
+			set_bi_char_token('=', Token_greaterOrEqual, Token_greater); break;
 		case '"':
 			next();
 			value.clear();
 			while (ch != EOF && ch != '"') { add_ch_to_value(); }
 			if (ch != '"') {
-				token = Token::unknown;
+				token = Token_unknown;
 			} else {
-				set_token(Token::string_literal);
+				set_token(Token_stringLiteral);
 			}
 			break;
 		case '(':
@@ -290,10 +289,10 @@ void State::advance() {
 			if (ch == '*') {
 				do_comment();
 			} else {
-				token = Token::left_parenthesis;
+				token = Token_leftParenthesis;
 			}
 			break;
-		default: set_token(Token::unknown);
+		default: set_token(Token_unknown);
 	}
 }
 
@@ -306,7 +305,7 @@ void parse_module(State& state);
 
 void convert(const std::string& path) {
 	std::cout << "converting " << path << "\n";
-	if (path.size() < 4 || path.substr(path.size() - 4) != ".mod") {
+	if (path.size() < 4 || path.substr(path.size() - 4) != ".Mod") {
 		throw Error { "no mod file" };
 	}
 	auto base_path { path.substr(0, path.size() - 4) };
@@ -333,20 +332,20 @@ void parse_declaration_sequence(State &state);
 void parse_statement_sequence(State& state);
 
 void parse_module(State& state) {
-	state.consume(Token::MODULE);
-	state.expect(Token::identifier);
+	state.consume(Token_kwMODULE);
+	state.expect(Token_identifier);
 	auto module_name { state.value };
 	if (module_name != state.base) {
 		throw Error { "MODULE name doesn't match file name" };
 	}
 	state.advance();
-	state.consume(Token::semicolon);
+	state.consume(Token_semicolon);
 	state.cxx << "static void init_module_imports() {\n";
 	state.indent(); state.cxx << "static bool already_run { false };\n";
 	state.indent(); state.cxx << "if (already_run) { return; }\n";
 	state.indent(); state.cxx << "already_run = true;\n";
 
-	if (state.token == Token::IMPORT) {
+	if (state.token == Token_kwIMPORT) {
 		parse_import_list(state);
 	}
 	state.cxx << "}\n\n";
@@ -355,18 +354,18 @@ void parse_module(State& state) {
 	state.h << "void " << state.base << "_init_module();\n";
 	state.cxx << "void " << state.base << "_init_module() {\n";
 	state.indent(); state.cxx << "init_module_imports();\n";
-	if (state.token == Token::BEGIN) {
+	if (state.token == Token_kwBEGIN) {
 		state.advance();
 		parse_statement_sequence(state);
 	}
-	state.consume(Token::END);
-	state.expect(Token::identifier);
+	state.consume(Token_kwEND);
+	state.expect(Token_identifier);
 	if (module_name != state.value) {
 		throw Error { "MODULE names don't match" };
 	}
 	state.advance();
-	state.consume(Token::period);
-	state.expect(Token::eof);
+	state.consume(Token_period);
+	state.expect(Token_eof);
 	state.cxx << "}\n";
 }
 
@@ -377,24 +376,24 @@ void State::do_comment() {
 void parse_import(State& state);
 
 void parse_import_list(State& state) {
-	state.consume(Token::IMPORT);
+	state.consume(Token_kwIMPORT);
 	parse_import(state);
-	while (state.token == Token::comma) {
+	while (state.token == Token_comma) {
 		state.advance();
 		parse_import(state);
 	}
-	state.consume(Token::semicolon);
+	state.consume(Token_semicolon);
 	state.h << "\n";
 }
 
 void parse_import(State& state) {
-	state.expect(Token::identifier);
+	state.expect(Token_identifier);
 	auto name { state.value };
 	auto full_name { name };
 	state.advance();
-	if (state.token == Token::assign) {
+	if (state.token == Token_assign) {
 		state.advance();
-		state.expect(Token::identifier);
+		state.expect(Token_identifier);
 		full_name = state.value;
 		state.advance();
 	}
@@ -403,42 +402,65 @@ void parse_import(State& state) {
 	state.h << "#include \"" << full_name << ".h\"\n";
 }
 
-void parse_const_declaration();
+void parse_const_declaration(State& state);
 void parse_type_declaration();
 void parse_variable_declaration();
 void parse_procedure_declaration();
 
 void parse_declaration_sequence(State& state) {
-	if (state.token == Token::CONST) {
+	if (state.token == Token_kwCONST) {
 		state.advance();
-		while (state.token == Token::identifier) {
-			parse_const_declaration();
-			state.consume(Token::semicolon);
+		while (state.token == Token_identifier) {
+			parse_const_declaration(state);
+			state.consume(Token_semicolon);
 		}
 	}
-	if (state.token == Token::TYPE) {
+	if (state.token == Token_kwTYPE) {
 		state.advance();
-		while (state.token == Token::identifier) {
+		while (state.token == Token_identifier) {
 			parse_type_declaration();
-			state.consume(Token::semicolon);
+			state.consume(Token_semicolon);
 		}
 	}
-	if (state.token == Token::VAR) {
+	if (state.token == Token_kwVAR) {
 		state.advance();
-		while (state.token == Token::identifier) {
+		while (state.token == Token_identifier) {
 			parse_variable_declaration();
-			state.consume(Token::semicolon);
+			state.consume(Token_semicolon);
 		}
 	}
 
-	while (state.token == Token::PROCEDURE) {
+	while (state.token == Token_kwPROCEDURE) {
 		parse_procedure_declaration();
-		state.consume(Token::semicolon);
+		state.consume(Token_semicolon);
 	}
 }
 
-void parse_const_declaration() {
-	throw Error { "parse_const_declaration not implemented" };
+void parse_ident_def(State& state);
+void parse_const_expression(State& state);
+
+void parse_const_declaration(State& state) {
+	state.h << "constexpr auto ";
+	parse_ident_def(state);
+	state.consume(Token_equals);
+	state.h << " { ";
+	parse_const_expression(state);
+	state.h << " };\n";
+}
+
+void parse_ident_def(State& state) {
+	state.expect(Token_identifier);
+	state.h << state.base << "_" << state.value;
+	state.advance();
+	if (state.token == Token_star) {
+		state.advance();
+	}
+}
+
+std::string parse_expression(State& state);
+
+void parse_const_expression(State& state) {
+	state.h << parse_expression(state);
 }
 
 void parse_type_declaration() {
@@ -457,7 +479,7 @@ void parse_statement(State& state);
 
 void parse_statement_sequence(State& state) {
 	parse_statement(state);
-	while (state.token == Token::semicolon) {
+	while (state.token == Token_semicolon) {
 		state.advance();
 		parse_statement(state);
 	}
@@ -471,32 +493,31 @@ void parse_repeat_statement();
 void parse_for_statement();
 
 void parse_statement(State& state) {
-	if (state.token == Token::identifier) {
+	if (state.token == Token_identifier) {
 		parse_assignment_or_procedure_call(state);
-	} else if (state.token == Token::IF) {
+	} else if (state.token == Token_kwIF) {
 		parse_if_statement(state);
-	} else if (state.token == Token::CASE) {
+	} else if (state.token == Token_kwCASE) {
 		parse_case_statement();
-	} else if (state.token == Token::WHILE) {
+	} else if (state.token == Token_kwWHILE) {
 		parse_while_statement();
-	} else if (state.token == Token::REPEAT) {
+	} else if (state.token == Token_kwREPEAT) {
 		parse_repeat_statement();
-	} else if (state.token == Token::FOR) {
+	} else if (state.token == Token_kwFOR) {
 		parse_for_statement();
 	}
 }
 
 std::string parse_designator(State& state);
-std::string parse_expression(State& state);
 std::string parse_actual_parameters(State& state);
 
 void parse_assignment_or_procedure_call(State& state) {
 	state.indent(); state.cxx << parse_designator(state);
-	if (state.token == Token::assign) {
+	if (state.token == Token_assign) {
 		state.advance();
 		state.cxx << " = " << parse_expression(state) << ";\n";
 	} else {
-		if (state.token == Token::left_parenthesis) {
+		if (state.token == Token_leftParenthesis) {
 			state.cxx << "(";
 			state.cxx << parse_actual_parameters(state);
 			state.cxx << ");\n";
@@ -511,18 +532,18 @@ std::string parse_designator(State& state) {
 	auto qual_ident { parse_qual_ident(state) };
 
 	for (;;) {
-		if (state.token == Token::period) {
+		if (state.token == Token_period) {
 			state.advance();
-			state.expect(Token::identifier);
+			state.expect(Token_identifier);
 			qual_ident = "(" + qual_ident + ")." + state.value;
 			state.advance();
-		} else if (state.token == Token::left_bracket) {
+		} else if (state.token == Token_leftBracket) {
 			state.advance();
 			qual_ident = "(" + qual_ident + ")[";
 			qual_ident += parse_expression_list(state, "][");
-			state.consume(Token::right_bracket);
+			state.consume(Token_rightBracket);
 			qual_ident += "]";
-		} else if (state.token == Token::ptr) {
+		} else if (state.token == Token_ptr) {
 			qual_ident = "*(" + qual_ident + ")";
 			state.advance();
 			/* TODO: Implement cast
@@ -541,13 +562,13 @@ std::string parse_designator(State& state) {
 }
 
 std::string parse_qual_ident(State& state) {
-	state.expect(Token::identifier);
+	state.expect(Token_identifier);
 	auto name { state.value };
 	state.advance();
 	if (state.module_mapping.find(name) != state.module_mapping.end()) {
-		if (state.token == Token::period) {
+		if (state.token == Token_period) {
 			state.advance();
-			state.expect(Token::identifier);
+			state.expect(Token_identifier);
 			name = name + "_" + state.value;
 			state.advance();
 		} else { throw Error { ". after module expected" }; }
@@ -557,7 +578,7 @@ std::string parse_qual_ident(State& state) {
 
 std::string parse_expression_list(State& state, const char* separator) {
 	auto result { parse_expression(state) };
-	while (state.token == Token::comma) {
+	while (state.token == Token_comma) {
 		state.advance();
 		result += separator;
 		result += parse_expression(state);
@@ -571,12 +592,12 @@ std::string parse_expression(State& state) {
 	auto result { parse_simple_expression(state) };
 	for (;;) {
 		switch (state.token) {
-			case Token::equals: result += " == "; break;
-			case Token::not_equals: result += " != "; break;
-			case Token::less: result += " < "; break;
-			case Token::less_or_equal: result += " <= "; break;
-			case Token::greater: result += " > "; break;
-			case Token::greater_or_equal: result += " >= "; break;
+			case Token_equals: result += " == "; break;
+			case Token_notEquals: result += " != "; break;
+			case Token_less: result += " < "; break;
+			case Token_lessOrEqual: result += " <= "; break;
+			case Token_greater: result += " > "; break;
+			case Token_greaterOrEqual: result += " >= "; break;
 			// TODO: Token::IN
 			// TODO: Token::IS
 			default: return result;
@@ -590,18 +611,18 @@ std::string parse_term(State& state);
 
 std::string parse_simple_expression(State& state) {
 	std::string result;
-	if (state.token == Token::plus) {
+	if (state.token == Token_plus) {
 		result += "+"; state.advance();
-	} else if (state.token == Token::minus) {
+	} else if (state.token == Token_minus) {
 		result += "-"; state.advance();
 	}
 	result += parse_term(state);
 
 	for (;;) {
 		switch (state.token) {
-			case Token::plus: result += " + "; break;
-			case Token::minus: result += " - "; break;
-			case Token::OR: result += " || "; break;
+			case Token_plus: result += " + "; break;
+			case Token_minus: result += " - "; break;
+			case Token_kwOR: result += " || "; break;
 			default: return result;
 		}
 		state.advance();
@@ -617,11 +638,11 @@ std::string parse_term(State& state) {
 	for (;;) {
 		char* postfix = "";
 		switch (state.token) {
-			case Token::star: result += " * "; break;
-			case Token::slash: result = "static_cast<double>(" + result + ") / "; break;
-			case Token::DIV: result += "static_cast<int>(" + result + " / "; postfix = ")"; break;
-			case Token::MOD: result += " % "; break;
-			case Token::andop: result += " && "; break;
+			case Token_star: result += " * "; break;
+			case Token_slash: result = "static_cast<double>(" + result + ") / "; break;
+			case Token_kwDIV: result += "static_cast<int>(" + result + " / "; postfix = ")"; break;
+			case Token_kwMOD: result += " % "; break;
+			case Token_andop: result += " && "; break;
 			default: return result;
 		}
 		state.advance();
@@ -634,49 +655,49 @@ std::string parse_set();
 
 std::string parse_factor(State& state) {
 	switch (state.token) {
-		case Token::integer_literal:
-		case Token::float_literal: {
+		case Token_integerLiteral:
+		case Token_floatLiteral: {
 			auto result { state.value };
 			state.advance();
 			return result;
 		}
-		case Token::string_literal: {
+		case Token_stringLiteral: {
 			auto result { "\"" + state.value + "\"" };
 			state.advance();
 			return result;
 		}
-		case Token::char_literal: {
+		case Token_charLiteral: {
 			auto result { "'\\x" + state.value + "'" };
 			state.advance();
 			return result;
 		}
-		case Token::NIL:
+		case Token_kwNIL:
 			state.advance();
 			return "nullptr";
-		case Token::TRUE:
+		case Token_kwTRUE:
 			state.advance();
 			return "true";
-		case Token::FALSE:
+		case Token_kwFALSE:
 			state.advance();
 			return "false";
-		case Token::left_brace:
+		case Token_leftBrace:
 			return parse_set();
-		case Token::identifier: {
+		case Token_identifier: {
 			auto result { parse_designator(state) };
-			if (state.token == Token::left_parenthesis) {
+			if (state.token == Token_leftParenthesis) {
 				result += "(";
 				result += parse_actual_parameters(state);
 				result += ")";
 			}
 			return result;
 		}
-		case Token::left_parenthesis: {
+		case Token_leftParenthesis: {
 			state.advance();
 			auto inner { parse_expression(state) };
-			state.consume(Token::right_parenthesis);
+			state.consume(Token_rightParenthesis);
 			return "(" + inner + ")";
 		}
-		case Token::notop: {
+		case Token_notop: {
 			state.advance();
 			auto factor { parse_expression(state) };
 			return "!(" + factor + ")";
@@ -691,37 +712,37 @@ std::string parse_set() {
 
 std::string parse_actual_parameters(State& state) {
 	std::string result;
-	state.consume(Token::left_parenthesis);
-	if (state.token != Token::right_parenthesis) {
+	state.consume(Token_leftParenthesis);
+	if (state.token != Token_rightParenthesis) {
 		result = parse_expression_list(state, ", ");
 	}
-	state.consume(Token::right_parenthesis);
+	state.consume(Token_rightParenthesis);
 	return result;
 }
 
 void parse_if_statement(State& state) {
-	state.consume(Token::IF);
+	state.consume(Token_kwIF);
 	state.indent(); state.cxx << "if (" << parse_expression(state) << ") {\n";
-	state.consume(Token::THEN);
+	state.consume(Token_kwTHEN);
 	++state.level;
 	parse_statement_sequence(state);
 	--state.level;
-	while (state.token == Token::ELSIF) {
+	while (state.token == Token_kwELSIF) {
 		state.advance();
 		state.indent(); state.cxx << "} else if (" << parse_expression(state) << ") {\n";
-		state.consume(Token::THEN);
+		state.consume(Token_kwTHEN);
 		++state.level;
 		parse_statement_sequence(state);
 		--state.level;
 	}
-	if (state.token == Token::ELSE) {
+	if (state.token == Token_kwELSE) {
 		state.advance();
 		state.indent(); state.cxx << "} else {\n";
 		++state.level;
 		parse_statement_sequence(state);
 		--state.level;
 	}
-	state.consume(Token::END);
+	state.consume(Token_kwEND);
 	state.indent(); state.cxx << "}\n";
 }
 
