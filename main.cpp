@@ -41,12 +41,14 @@ struct State {
 
 	std::string value { };
 	std::map<std::string, std::string> module_mapping;
+	int level { 1 };
 
 	void next();
 	void add_ch_to_value();
 	void set_token(const Token& tok);
 	void set_bi_char_token(char trigger, const Token& with_trigger, const Token& others);
 	void do_comment();
+	void indent();
 
 	void advance();
 
@@ -60,6 +62,10 @@ struct State {
 	void expect(const Token& token) const;
 	void consume(const Token& token);
 };
+
+void State::indent() {
+	for (int i { level }; i > 0; --i) { cxx << '\t'; }
+}
 
 std::string token_name(const Token& token, const std::string& value) {
 	switch (token) {
@@ -336,9 +342,9 @@ void parse_module(State& state) {
 	state.advance();
 	state.consume(Token::semicolon);
 	state.cxx << "static void init_module_imports() {\n";
-	state.cxx << "\tstatic bool already_run { false };\n";
-	state.cxx << "\tif (already_run) { return; }\n";
-	state.cxx << "\talready_run = true;\n";
+	state.indent(); state.cxx << "static bool already_run { false };\n";
+	state.indent(); state.cxx << "if (already_run) { return; }\n";
+	state.indent(); state.cxx << "already_run = true;\n";
 
 	if (state.token == Token::IMPORT) {
 		parse_import_list(state);
@@ -348,7 +354,7 @@ void parse_module(State& state) {
 	parse_declaration_sequence(state);
 	state.h << "void " << state.base << "_init_module();\n";
 	state.cxx << "void " << state.base << "_init_module() {\n";
-	state.cxx << "\tinit_module_imports();\n";
+	state.indent(); state.cxx << "init_module_imports();\n";
 	if (state.token == Token::BEGIN) {
 		state.advance();
 		parse_statement_sequence(state);
@@ -393,7 +399,7 @@ void parse_import(State& state) {
 		state.advance();
 	}
 	state.module_mapping[name] = full_name;
-	state.cxx << "\t" << full_name << "_init_module();\n";
+	state.indent(); state.cxx << full_name << "_init_module();\n";
 	state.h << "#include \"" << full_name << ".h\"\n";
 }
 
@@ -485,7 +491,7 @@ std::string parse_expression(State& state);
 std::string parse_actual_parameters(State& state);
 
 void parse_assignment_or_procedure_call(State& state) {
-	state.cxx << "\t" << parse_designator(state);
+	state.indent(); state.cxx << parse_designator(state);
 	if (state.token == Token::assign) {
 		state.advance();
 		state.cxx << " = " << parse_expression(state) << ";\n";
@@ -695,22 +701,28 @@ std::string parse_actual_parameters(State& state) {
 
 void parse_if_statement(State& state) {
 	state.consume(Token::IF);
-	state.cxx << "\tif (" << parse_expression(state) << ") {\n";
+	state.indent(); state.cxx << "if (" << parse_expression(state) << ") {\n";
 	state.consume(Token::THEN);
+	++state.level;
 	parse_statement_sequence(state);
+	--state.level;
 	while (state.token == Token::ELSIF) {
 		state.advance();
-		state.cxx << "\t} else if (" << parse_expression(state) << ") {\n";
+		state.indent(); state.cxx << "} else if (" << parse_expression(state) << ") {\n";
 		state.consume(Token::THEN);
+		++state.level;
 		parse_statement_sequence(state);
+		--state.level;
 	}
 	if (state.token == Token::ELSE) {
 		state.advance();
-		state.cxx << "\t} else {\n";
+		state.indent(); state.cxx << "} else {\n";
+		++state.level;
 		parse_statement_sequence(state);
+		--state.level;
 	}
 	state.consume(Token::END);
-	state.cxx << "\t}\n";
+	state.indent(); state.cxx << "}\n";
 }
 
 void parse_case_statement() {
