@@ -4,3 +4,4 @@
 
 #include "Out.h"
 
+void Hello_init_module();

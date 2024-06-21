@@ -263,10 +263,16 @@ void parse_module(State& state) {
 	}
 	state.advance();
 	state.consume(Token::semicolon);
+	state.cxx << "static void init_module_imports() {\n";
 	if (state.token == Token::IMPORT) {
 		parse_import_list(state);
 	}
+	state.cxx << "}\n\n";
+
 	parse_declaration_sequence(state);
+	state.h << "void " << state.base << "_init_module();\n";
+	state.cxx << "void " << state.base << "_init_module() {\n";
+	state.cxx << "\tinit_module_imports();\n";
 	if (state.token == Token::BEGIN) {
 		state.advance();
 		parse_statement_sequence(state);
@@ -279,6 +285,7 @@ void parse_module(State& state) {
 	state.advance();
 	state.consume(Token::period);
 	state.expect(Token::eof);
+	state.cxx << "}\n";
 }
 
 void State::do_comment() {
@@ -310,6 +317,7 @@ void parse_import(State& state) {
 		state.advance();
 	}
 	state.module_mapping[name] = full_name;
+	state.cxx << "\t" << full_name << "_init_module();\n";
 	state.h << "#include \"" << full_name << ".h\"\n";
 }
 
@@ -373,7 +381,7 @@ void parse_statement_sequence(State& state) {
 	}
 }
 
-void parse_assignment_or_procedure_call();
+void parse_assignment_or_procedure_call(State& state);
 void parse_if_statement();
 void parse_case_statement();
 void parse_while_statement();
@@ -382,7 +390,7 @@ void parse_for_statement();
 
 void parse_statement(State& state) {
 	if (state.token == Token::identifier) {
-		parse_assignment_or_procedure_call();
+		parse_assignment_or_procedure_call(state);
 	} else if (state.token == Token::IF) {
 		parse_if_statement();
 	} else if (state.token == Token::CASE) {
@@ -396,8 +404,71 @@ void parse_statement(State& state) {
 	}
 }
 
-void parse_assignment_or_procedure_call() {
-	throw Error { "parse_assigment_or_procedure_call not implemented" };
+void parse_designator(State& state);
+void parse_expression();
+void parse_actual_parameters();
+
+void parse_assignment_or_procedure_call(State& state) {
+	parse_designator(state);
+	if (state.token == Token::assign) {
+		state.advance();
+		parse_expression();
+	} else {
+		if (state.token == Token::left_parenthesis) {
+			parse_actual_parameters();
+		}
+	}
+}
+
+std::string parse_qual_ident();
+void parse_expression_list(const char* separator);
+
+void parse_designator(State& state) {
+	auto qual_ident { parse_qual_ident() };
+
+	for (;;) {
+		if (state.token == Token::period) {
+			state.advance();
+			state.expect(Token::identifier);
+			state.cxx << qual_ident << '.' << state.value;
+			state.advance();
+		} else if (state.token == Token::left_bracket) {
+			state.advance();
+			state.cxx << qual_ident << '[';
+			parse_expression_list("][");
+			state.consume(Token::right_bracket);
+			state.cxx << ']';
+		} else if (state.token == Token::ptr) {
+			state.cxx << '*' << qual_ident;
+			state.advance();
+			/* TODO: Implement cast
+		} else if (token::is(token::left_parenthesis)) {
+			advance();
+			auto type { type::Type::as_type(parse_qual_ident()) };
+			if (!type) { diag::report(diag::err_type_expected); }
+			consume(token::right_parenthesis);
+			expression = expr::Unary::create(
+				type, token::left_parenthesis, expression
+			);
+			 */
+		} else { break; }
+	}
+}
+
+std::string parse_qual_ident() {
+	throw Error { "parse_qual_ident not implemented" };
+}
+
+void parse_expression_list(const char* separator) {
+	throw Error { "parse_expression_list not implemented" };
+}
+
+void parse_expression() {
+	throw Error { "parse_expression not implemented" };
+}
+
+void parse_actual_parameters() {
+	throw Error { "parse_actual_parameters not implemented" };
 }
 
 void parse_if_statement() {
