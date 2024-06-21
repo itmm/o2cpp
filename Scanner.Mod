@@ -5,4 +5,6 @@ MODULE Scanner;
     VAR
         token: INTEGER;
 
+BEGIN
+    token := T.unknown
 END Scanner.

@@ -623,15 +623,19 @@ std::string parse_qual_ident(State& state) {
 	state.expect(Token_identifier);
 	auto name { state.value };
 	state.advance();
-	if (state.module_mapping.find(name) != state.module_mapping.end()) {
+	auto module { state.module_mapping.find(name) };
+	if (module != state.module_mapping.end()) {
 		if (Scanner_token == Token_period) {
 			state.advance();
 			state.expect(Token_identifier);
-			name = name + "_" + state.value;
+			name = state.module_mapping[name] + "_" + state.value;
 			state.advance();
 		} else { throw Error { ". after module expected" }; }
+	} else if (name == "INTEGER") {
+		name = "SYSTEM_INTEGER";
+	} else {
+		name = state.base + "_" + name;
 	}
-	if (name == "INTEGER") { name = "SYSTEM_INTEGER"; }
 	return name;
 }
 

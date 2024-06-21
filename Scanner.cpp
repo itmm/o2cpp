@@ -10,4 +10,5 @@ static void init_module_imports() {
 SYSTEM_INTEGER Scanner_token;
 void Scanner_init_module() {
 	init_module_imports();
+	Scanner_token = Token_unknown;
 }
