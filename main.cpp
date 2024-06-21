@@ -251,8 +251,8 @@ void convert(const std::string& path) {
 }
 
 void parse_import_list(State& state);
-void parse_declaration_sequence();
-void parse_statement_sequence();
+void parse_declaration_sequence(State &state);
+void parse_statement_sequence(State& state);
 
 void parse_module(State& state) {
 	state.consume(Token::MODULE);
@@ -266,10 +266,10 @@ void parse_module(State& state) {
 	if (state.token == Token::IMPORT) {
 		parse_import_list(state);
 	}
-	parse_declaration_sequence();
+	parse_declaration_sequence(state);
 	if (state.token == Token::BEGIN) {
 		state.advance();
-		parse_statement_sequence();
+		parse_statement_sequence(state);
 	}
 	state.consume(Token::END);
 	state.expect(Token::identifier);
@@ -313,11 +313,110 @@ void parse_import(State& state) {
 	state.h << "#include \"" << full_name << ".h\"\n";
 }
 
-void parse_declaration_sequence() {
-	throw Error { "parse_declaration_sequence not implemented" };
+void parse_const_declaration();
+void parse_type_declaration();
+void parse_variable_declaration();
+void parse_procedure_declaration();
+
+void parse_declaration_sequence(State& state) {
+	if (state.token == Token::CONST) {
+		state.advance();
+		while (state.token == Token::identifier) {
+			parse_const_declaration();
+			state.consume(Token::semicolon);
+		}
+	}
+	if (state.token == Token::TYPE) {
+		state.advance();
+		while (state.token == Token::identifier) {
+			parse_type_declaration();
+			state.consume(Token::semicolon);
+		}
+	}
+	if (state.token == Token::VAR) {
+		state.advance();
+		while (state.token == Token::identifier) {
+			parse_variable_declaration();
+			state.consume(Token::semicolon);
+		}
+	}
+
+	while (state.token == Token::PROCEDURE) {
+		parse_procedure_declaration();
+		state.consume(Token::semicolon);
+	}
 }
 
-void parse_statement_sequence() {
-	throw Error { "parse_statement_sequence not implemented" };
+void parse_const_declaration() {
+	throw Error { "parse_const_declaration not implemented" };
+}
+
+void parse_type_declaration() {
+	throw Error { "parse_type_declaration not implemented" };
+}
+
+void parse_variable_declaration() {
+	throw Error { "parse_variable_declaration not implemented" };
+}
+
+void parse_procedure_declaration() {
+	throw Error { "parse_procedure_declaration not implemented" };
+}
+
+void parse_statement(State& state);
+
+void parse_statement_sequence(State& state) {
+	parse_statement(state);
+	while (state.token == Token::semicolon) {
+		state.advance();
+		parse_statement(state);
+	}
+}
+
+void parse_assignment_or_procedure_call();
+void parse_if_statement();
+void parse_case_statement();
+void parse_while_statement();
+void parse_repeat_statement();
+void parse_for_statement();
+
+void parse_statement(State& state) {
+	if (state.token == Token::identifier) {
+		parse_assignment_or_procedure_call();
+	} else if (state.token == Token::IF) {
+		parse_if_statement();
+	} else if (state.token == Token::CASE) {
+		parse_case_statement();
+	} else if (state.token == Token::WHILE) {
+		parse_while_statement();
+	} else if (state.token == Token::REPEAT) {
+		parse_repeat_statement();
+	} else if (state.token == Token::FOR) {
+		parse_for_statement();
+	}
+}
+
+void parse_assignment_or_procedure_call() {
+	throw Error { "parse_assigment_or_procedure_call not implemented" };
+}
+
+void parse_if_statement() {
+	throw Error { "parse_if_statement not implemented" };
+}
+
+void parse_case_statement() {
+	throw Error { "parse_case_statement not implemented" };
+}
+
+void parse_while_statement() {
+	throw Error { "parse_while_statement not implemented" };
+}
+
+void parse_repeat_statement() {
+	throw Error { "parse_repeat_statement not implemented" };
+}
+
+void parse_for_statement() {
+	throw Error { "parse_for_statement not implemented" };
 }
 
