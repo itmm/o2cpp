@@ -139,6 +139,7 @@ void State::advance() {
 			} else { break; }
 		}
 		if (ch == 'H') {
+			value = "0x" + value;
 			is_hex = true;
 			next();
 		} else if (ch == 'X') {
@@ -404,42 +405,44 @@ void parse_statement(State& state) {
 	}
 }
 
-void parse_designator(State& state);
-void parse_expression();
-void parse_actual_parameters();
+std::string parse_designator(State& state);
+std::string parse_expression(State& state);
+std::string parse_actual_parameters(State& state);
 
 void parse_assignment_or_procedure_call(State& state) {
-	parse_designator(state);
+	state.cxx << "\t" << parse_designator(state);
 	if (state.token == Token::assign) {
 		state.advance();
-		parse_expression();
+		state.cxx << " = " << parse_expression(state) << ";\n";
 	} else {
 		if (state.token == Token::left_parenthesis) {
-			parse_actual_parameters();
-		}
+			state.cxx << "(";
+			state.cxx << parse_actual_parameters(state);
+			state.cxx << ");\n";
+		} else { state.cxx << "();\n"; }
 	}
 }
 
-std::string parse_qual_ident();
-void parse_expression_list(const char* separator);
+std::string parse_qual_ident(State& state);
+std::string parse_expression_list(State& state, const char* separator);
 
-void parse_designator(State& state) {
-	auto qual_ident { parse_qual_ident() };
+std::string parse_designator(State& state) {
+	auto qual_ident { parse_qual_ident(state) };
 
 	for (;;) {
 		if (state.token == Token::period) {
 			state.advance();
 			state.expect(Token::identifier);
-			state.cxx << qual_ident << '.' << state.value;
+			qual_ident = "(" + qual_ident + ")." + state.value;
 			state.advance();
 		} else if (state.token == Token::left_bracket) {
 			state.advance();
-			state.cxx << qual_ident << '[';
-			parse_expression_list("][");
+			qual_ident = "(" + qual_ident + ")[";
+			qual_ident += parse_expression_list(state, "][");
 			state.consume(Token::right_bracket);
-			state.cxx << ']';
+			qual_ident += "]";
 		} else if (state.token == Token::ptr) {
-			state.cxx << '*' << qual_ident;
+			qual_ident = "*(" + qual_ident + ")";
 			state.advance();
 			/* TODO: Implement cast
 		} else if (token::is(token::left_parenthesis)) {
@@ -453,22 +456,166 @@ void parse_designator(State& state) {
 			 */
 		} else { break; }
 	}
+	return qual_ident;
 }
 
-std::string parse_qual_ident() {
-	throw Error { "parse_qual_ident not implemented" };
+std::string parse_qual_ident(State& state) {
+	state.expect(Token::identifier);
+	auto name { state.value };
+	state.advance();
+	if (state.module_mapping.find(name) != state.module_mapping.end()) {
+		if (state.token == Token::period) {
+			state.advance();
+			state.expect(Token::identifier);
+			name = name + "_" + state.value;
+			state.advance();
+		} else { throw Error { ". after module expected" }; }
+	}
+	return name;
 }
 
-void parse_expression_list(const char* separator) {
-	throw Error { "parse_expression_list not implemented" };
+std::string parse_expression_list(State& state, const char* separator) {
+	auto result { parse_expression(state) };
+	while (state.token == Token::comma) {
+		state.advance();
+		result += separator;
+		result += parse_expression(state);
+	}
+	return result;
 }
 
-void parse_expression() {
-	throw Error { "parse_expression not implemented" };
+std::string parse_simple_expression(State& state);
+
+std::string parse_expression(State& state) {
+	auto result { parse_simple_expression(state) };
+	for (;;) {
+		switch (state.token) {
+			case Token::equals: result += " == "; break;
+			case Token::not_equals: result += " != "; break;
+			case Token::less: result += " < "; break;
+			case Token::less_or_equal: result += " <= "; break;
+			case Token::greater: result += " > "; break;
+			case Token::greater_or_equal: result += " >= "; break;
+			// TODO: Token::IN
+			// TODO: Token::IS
+			default: return result;
+		}
+		state.advance();
+		result += parse_simple_expression(state);
+	}
 }
 
-void parse_actual_parameters() {
-	throw Error { "parse_actual_parameters not implemented" };
+std::string parse_term(State& state);
+
+std::string parse_simple_expression(State& state) {
+	std::string result;
+	if (state.token == Token::plus) {
+		result += "+"; state.advance();
+	} else if (state.token == Token::minus) {
+		result += "-"; state.advance();
+	}
+	result += parse_term(state);
+
+	for (;;) {
+		switch (state.token) {
+			case Token::plus: result += " + "; break;
+			case Token::minus: result += " - "; break;
+			case Token::OR: result += " || "; break;
+			default: return result;
+		}
+		state.advance();
+		result += parse_term(state);
+	}
+}
+
+std::string parse_factor(State& state);
+
+std::string parse_term(State& state) {
+	auto result { parse_factor(state) };
+
+	for (;;) {
+		char* postfix = "";
+		switch (state.token) {
+			case Token::star: result += " * "; break;
+			case Token::slash: result = "static_cast<double>(" + result + ") / "; break;
+			case Token::DIV: result += "static_cast<int>(" + result + " / "; postfix = ")"; break;
+			case Token::MOD: result += " % "; break;
+			case Token::andop: result += " && "; break;
+			default: return result;
+		}
+		state.advance();
+		result += parse_factor(state);
+		result += postfix;
+	}
+}
+
+std::string parse_set();
+
+std::string parse_factor(State& state) {
+	switch (state.token) {
+		case Token::integer_literal:
+		case Token::float_literal: {
+			auto result { state.value };
+			state.advance();
+			return result;
+		}
+		case Token::string_literal: {
+			auto result { "\"" + state.value + "\"" };
+			state.advance();
+			return result;
+		}
+		case Token::char_literal: {
+			auto result { "'\\x" + state.value + "'" };
+			state.advance();
+			return result;
+		}
+		case Token::NIL:
+			state.advance();
+			return "nullptr";
+		case Token::TRUE:
+			state.advance();
+			return "true";
+		case Token::FALSE:
+			state.advance();
+			return "false";
+		case Token::left_brace:
+			return parse_set();
+		case Token::identifier: {
+			auto result { parse_designator(state) };
+			if (state.token == Token::left_parenthesis) {
+				result += "(";
+				result += parse_actual_parameters(state);
+				result += ")";
+			}
+			return result;
+		}
+		case Token::left_parenthesis: {
+			state.advance();
+			auto inner { parse_expression(state) };
+			state.consume(Token::right_parenthesis);
+			return "(" + inner + ")";
+		}
+		case Token::notop: {
+			state.advance();
+			auto factor { parse_expression(state) };
+			return "!(" + factor + ")";
+		}
+		default: throw Error { "factor expected "};
+	}
+}
+
+std::string parse_set() {
+	throw Error { "parse_set not implemented" };
+}
+
+std::string parse_actual_parameters(State& state) {
+	std::string result;
+	state.consume(Token::left_parenthesis);
+	if (state.token != Token::right_parenthesis) {
+		result = parse_expression_list(state, ", ");
+	}
+	state.consume(Token::right_parenthesis);
+	return result;
 }
 
 void parse_if_statement() {
