@@ -163,10 +163,6 @@ inline bool is_whitespace(int c) {
 		   c == '\r' || c == '\n';
 }
 
-inline bool is_letter(int c) {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
-
 void State::add_ch_to_value() {
 	value += static_cast<char>(ch);
 	ch = in.get();
@@ -193,9 +189,9 @@ void State::advance() {
 
 	if (ch == EOF) { Scanner_token = Token_eof; return; }
 
-	if (is_letter(ch)) {
+	if (Scanner_isLetter(ch)) {
 		value.clear();
-		while (is_letter(ch) || Scanner_isDigit(ch)) { add_ch_to_value(); }
+		while (Scanner_isLetter(ch) || Scanner_isDigit(ch)) { add_ch_to_value(); }
 		auto got { keywords.find(value) };
 		Scanner_token = got == keywords.end() ? Token_identifier : got->second;
 		return;

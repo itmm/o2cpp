@@ -8,6 +8,9 @@ SYSTEM_INTEGER Scanner_token;
 auto Scanner_isDigit(SYSTEM_CHAR Scanner_ch) -> SYSTEM_BOOLEAN {
 	return Scanner_ch >= Oberon_String { "0" } && Scanner_ch <= Oberon_String { "9" };
 }
+auto Scanner_isLetter(SYSTEM_CHAR Scanner_ch) -> SYSTEM_BOOLEAN {
+	return (Scanner_ch >= Oberon_String { "a" } && Scanner_ch <= Oberon_String { "z" }) || (Scanner_ch >= Oberon_String { "A" } && Scanner_ch <= Oberon_String { "Z" });
+}
 void Scanner_init_module() {
 	static bool already_run { false };
 	if (already_run) { return; }
