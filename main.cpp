@@ -158,11 +158,6 @@ std::map<std::string, Token> keywords {
 	{ "WHILE", Token_kwWHILE }
 };
 
-inline bool is_whitespace(int c) {
-	return c == ' ' || c == '\t' || c == '\f' || c == '\v' ||
-		   c == '\r' || c == '\n';
-}
-
 void State::add_ch_to_value() {
 	value += static_cast<char>(ch);
 	ch = in.get();
@@ -183,7 +178,7 @@ void State::set_bi_char_token(
 }
 
 void State::advance() {
-	while (ch != EOF && is_whitespace(ch)) { next(); }
+	while (ch != EOF && Scanner_isWhitespace(ch)) { next(); }
 
 	constexpr int dot_dot { 1000 };
 
