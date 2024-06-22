@@ -4,6 +4,9 @@ static void init_module_imports() {
 	Out_init_module();
 }
 
+auto Hello_isDigit(SYSTEM_CHAR Hello_ch) -> SYSTEM_BOOLEAN {
+	return Hello_ch >= Oberon_String { "0" } && Hello_ch <= Oberon_String { "9" };
+}
 void Hello_init_module() {
 	static bool already_run { false };
 	if (already_run) { return; }

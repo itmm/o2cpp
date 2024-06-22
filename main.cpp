@@ -163,10 +163,6 @@ inline bool is_whitespace(int c) {
 		   c == '\r' || c == '\n';
 }
 
-inline bool is_digit(int c) {
-	return c >= '0' && c <= '9';
-}
-
 inline bool is_letter(int c) {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
@@ -199,17 +195,17 @@ void State::advance() {
 
 	if (is_letter(ch)) {
 		value.clear();
-		while (is_letter(ch) || is_digit(ch)) { add_ch_to_value(); }
+		while (is_letter(ch) || Scanner_isDigit(ch)) { add_ch_to_value(); }
 		auto got { keywords.find(value) };
 		Scanner_token = got == keywords.end() ? Token_identifier : got->second;
 		return;
 	}
 
-	if (is_digit(ch)) {
+	if (Scanner_isDigit(ch)) {
 		value.clear();
 		bool is_hex { false };
 		for (;;) {
-			if (is_digit(ch)) {
+			if (Scanner_isDigit(ch)) {
 				add_ch_to_value();
 			} else if (ch >= 'A' && ch <= 'F') {
 				add_ch_to_value();
@@ -236,15 +232,15 @@ void State::advance() {
 			}
 			value += '.';
 			if (is_hex) { set_token(Token_unknown); return; }
-			while (is_digit(ch)) { add_ch_to_value(); }
+			while (Scanner_isDigit(ch)) { add_ch_to_value(); }
 			if (ch == 'E') {
 				add_ch_to_value();
 				if (ch == '+' || ch == '-') { add_ch_to_value(); }
-				if (!is_digit(ch)) {
+				if (!Scanner_isDigit(ch)) {
 					Scanner_token = Token_unknown;
 					return;
 				}
-				while (is_digit(ch)) { add_ch_to_value(); }
+				while (Scanner_isDigit(ch)) { add_ch_to_value(); }
 			}
 			Scanner_token = Token_floatLiteral;
 			return;
@@ -408,7 +404,7 @@ void parse_import(State& state) {
 void parse_const_declaration(State& state);
 void parse_type_declaration();
 void parse_variable_declaration(State& state);
-void parse_procedure_declaration();
+void parse_procedure_declaration(State& state);
 
 void parse_declaration_sequence(State& state) {
 	if (Scanner_token == Token_kwCONST) {
@@ -434,13 +430,13 @@ void parse_declaration_sequence(State& state) {
 	}
 
 	while (Scanner_token == Token_kwPROCEDURE) {
-		parse_procedure_declaration();
+		parse_procedure_declaration(state);
 		state.consume(Token_semicolon);
 	}
 }
 
-std::string parse_ident_def(State& state);
 void parse_const_expression(State& state);
+std::string parse_ident_def(State& state);
 
 void parse_const_declaration(State& state) {
 	state.h << "constexpr auto ";
@@ -530,8 +526,115 @@ std::string parse_procedure_type(State& state) {
 	throw Error { "parse_procedure_type not implemented" };
 }
 
-void parse_procedure_declaration() {
-	throw Error { "parse_procedure_declaration not implemented" };
+void parse_formal_parameters(State& state);
+void parse_procedure_body(State& state);
+
+void parse_procedure_declaration(State& state) {
+	state.consume(Token_kwPROCEDURE);
+	auto name { parse_ident_def(state) };
+
+	state.h << "auto " << name;
+	state.cxx << "auto " << name;
+	parse_formal_parameters(state);
+
+	state.consume(Token_semicolon);
+	state.h << ";\n";
+	state.cxx << " {\n";
+
+	parse_procedure_body(state);
+	state.expect(Token_identifier);
+	if (state.base + "_" + state.value != name) {
+		throw Error { "PROCEDURE names don't match" };
+	}
+	state.advance();
+	state.cxx <<"}\n";
+}
+
+void parse_formal_parameter_section(State& state);
+
+void parse_formal_parameters(State& state) {
+	state.consume(Token_leftParenthesis);
+	state.h << "(";
+	state.cxx << "(";
+	if (Scanner_token != Token_rightParenthesis) {
+		parse_formal_parameter_section(state);
+		while (Scanner_token == Token_semicolon) {
+			state.advance();
+			parse_formal_parameter_section(state);
+		}
+	}
+	state.consume(Token_rightParenthesis);
+	state.h << ") -> ";
+	state.cxx << ") -> ";
+	if (Scanner_token == Token_colon) {
+		state.advance();
+		auto type { parse_qual_ident(state) };
+		state.h << type;
+		state.cxx << type;
+	} else {
+		state.h << "void";
+		state.cxx << "void";
+	}
+}
+
+void parse_formal_type(State& state);
+
+void parse_formal_parameter_section(State& state) {
+	bool reference { false };
+	if (Scanner_token == Token_kwVAR) { reference = true; state.advance(); }
+	std::vector<std::string> names;
+	state.expect(Token_identifier);
+	names.push_back(state.value);
+	state.advance();
+	while (Scanner_token == Token_comma) {
+		state.advance();
+		state.expect(Token_identifier);
+		names.push_back(state.value);
+		state.advance();
+	}
+
+	state.consume(Token_colon);
+	parse_formal_type(state);
+	if (reference) {
+		state.h << "&";
+		state.cxx << "&";
+	}
+
+	const char* prefix { " " };
+	for (const auto& name : names) {
+		state.h << prefix << state.base << "_" << name;
+		state.cxx << prefix << state.base << "_" << name;
+		prefix = ", ";
+	}
+}
+
+void parse_formal_type(State& state) {
+	int arrays { 0 };
+	while (Scanner_token == Token_kwARRAY) {
+		state.advance();
+		state.consume(Token_kwOF);
+		++arrays;
+	}
+	auto type { parse_qual_ident(state) };
+	state.h << type;
+	state.cxx << type;
+	for (; arrays; --arrays) {
+		state.h << '*';
+		state.cxx << '*';
+	}
+}
+
+void parse_procedure_body(State& state) {
+	parse_declaration_sequence(state);
+	if (Scanner_token == Token_kwBEGIN) {
+		state.advance();
+		parse_statement_sequence(state);
+	}
+	if (Scanner_token == Token_kwRETURN) {
+		state.advance();
+		state.indent(); state.cxx << "return " << parse_expression(state) << ";\n";
+	}
+	state.consume(Token_kwEND);
 }
 
 void parse_statement(State& state);
@@ -633,6 +736,10 @@ std::string parse_qual_ident(State& state) {
 		} else { throw Error { ". after module expected" }; }
 	} else if (name == "INTEGER") {
 		name = "SYSTEM_INTEGER";
+	} else if (name == "CHAR") {
+		name = "SYSTEM_CHAR";
+	} else if (name == "BOOLEAN") {
+		name = "SYSTEM_BOOLEAN";
 	} else {
 		name = state.base + "_" + name;
 	}
@@ -725,7 +832,7 @@ std::string parse_factor(State& state) {
 			return result;
 		}
 		case Token_stringLiteral: {
-			auto result { "\"" + state.value + "\"" };
+			auto result { "Oberon_String { \"" + state.value + "\" }" };
 			state.advance();
 			return result;
 		}
