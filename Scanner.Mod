@@ -13,6 +13,11 @@ MODULE Scanner;
         RETURN (ch >= "a" & ch <= "z") OR (ch >= "A" & ch <= "Z")
     END isLetter;
 
+    PROCEDURE isWhitespace(ch: CHAR): BOOLEAN;
+        RETURN ch = " " OR ch = 09X OR ch = 0CX OR ch = 0BX OR
+            ch = 0AX OR ch = 0DX
+    END isWhitespace;
+
 BEGIN
     token := T.unknown
 END Scanner.
