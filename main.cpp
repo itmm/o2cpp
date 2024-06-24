@@ -394,7 +394,7 @@ void parse_import(State& state) {
 }
 
 void parse_const_declaration(State& state);
-void parse_type_declaration();
+void parse_type_declaration(State& state);
 void parse_variable_declaration(State& state);
 void parse_procedure_declaration(State& state);
 
@@ -409,7 +409,7 @@ void parse_declaration_sequence(State& state) {
 	if (Scanner_token == Token_kwTYPE) {
 		state.advance();
 		while (Scanner_token == Token_identifier) {
-			parse_type_declaration();
+			parse_type_declaration(state);
 			state.consume(Token_semicolon);
 		}
 	}
@@ -455,12 +455,21 @@ void parse_const_expression(State& state) {
 	state.h << parse_expression(state);
 }
 
-void parse_type_declaration() {
-	throw Error { "parse_type_declaration not implemented" };
+std::string parse_type(State& state);
+
+void parse_type_declaration(State& state) {
+	auto name { parse_ident_def(state) };
+	state.consume(Token_equals);
+	bool is_record { Scanner_token == Token_kwRECORD };
+	auto type { parse_type(state) };
+	if (is_record) {
+		state.h << "struct " << name << type;
+	} else {
+		state.h << "using " << name << " = " << type << ";\n";
+	}
 }
 
 std::string parse_ident_list(State& state);
-std::string parse_type(State& state);
 
 void parse_variable_declaration(State& state) {
 	auto idents { parse_ident_list(state) };
@@ -506,8 +515,32 @@ std::string parse_array_type(State& state) {
 	throw Error { "parse_array_type not implemented" };
 }
 
+std::string parse_base_type(State& state);
+std::string parse_field_list_sequence(State& state);
+
 std::string parse_record_type(State& state) {
-	throw Error { "parse_record_type not implemented" };
+	std::string result;
+	state.consume(Token_kwRECORD);
+	if (Scanner_token == Token_leftParenthesis) {
+		state.advance();
+		result = ": " + parse_base_type(state);
+		state.consume(Token_rightParenthesis);
+	}
+	result += " {\n";
+	if (Scanner_token != Token_kwEND) {
+		result += parse_field_list_sequence(state);
+	}
+	result += "};\n";
+	state.consume(Token_kwEND);
+	return result;
+}
+
+std::string parse_base_type(State& state) {
+	throw Error { "parse_base_type not implemented" };
+}
+
+std::string parse_field_list_sequence(State& state) {
+	throw Error { "parse_field_list_sequence not implemented" };
 }
 
 std::string parse_pointer_type(State& state) {
