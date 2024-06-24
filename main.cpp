@@ -2,6 +2,7 @@
 #include <fstream>
 #include <map>
 #include <utility>
+#include <vector>
 
 #include "Scanner.h"
 
